@@ -64,6 +64,7 @@ class Mayue(object):
 
     def run(self):
         self.pid = os.getpid()
+        self.init_signals()
         if self.app.args.pid:
             self.pidfile = Pidfile(self.app.args.pid)
             self.pidfile.create(self.pid)
@@ -80,3 +81,14 @@ class Mayue(object):
                 self.clean()
                 break
         self.kill_worker(self.pid, signal.SIGKILL)
+
+    def init_signals(self):
+        signal.signal(signal.SIGINT, self.handle_exit)
+        signal.signal(signal.SIGQUIT, self.handle_exit)
+        signal.signal(signal.SIGTERM, self.handle_exit)
+        signal.signal(signal.SIGCHLD, self.handle_exit)
+
+    def handle_exit(self, sig, frame):
+        self.clean()
+        self.stop_workers()
+        sys.exit(sig)
