@@ -10,6 +10,12 @@ except ImportError:
             except OSError:
                 pass
 
+try:
+    from setproctitle import setproctitle
+except ImportError:
+    def setproctitle(title):
+        return
+
 
 def getcwd():
     try:

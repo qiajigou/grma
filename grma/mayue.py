@@ -18,6 +18,7 @@ class Mayue(object):
         self.app = app
         self.pid = None
         self.pidfile = None
+        self.try_to_stop = False
 
         args = sys.argv[:]
         args.insert(0, sys.executable)
@@ -63,15 +64,8 @@ class Mayue(object):
             self.pidfile.unlink()
 
     def run(self):
-
-        # set pid
-        self.pid = os.getpid()
-        # self.init_signals()
-        if self.app.args.pid:
-            self.pidfile = Pidfile(self.app.args.pid)
-            self.pidfile.create(self.pid)
-
         print __logo__
+
         print '[OK] Running grma {version}'.format(version=__version__)
 
         print '-' * 10 + ' CONFIG ' + '-' * 10
@@ -86,18 +80,31 @@ class Mayue(object):
 
         print '-' * 28
 
+        print '[OK] Master running'
         for i in range(self.app.args.num):
             self.spawn_worker()
+
+        utils.setproctitle('grma master')
 
         if self.app.args.daemon:
             utils.daemonize()
 
+        self.pid = os.getpid()
+        if self.app.args.pid:
+            self.pidfile = Pidfile(self.app.args.pid)
+            self.pidfile.create(self.pid)
+
+        self.init_signals()
+
         while True:
             try:
                 sleep(1)
+                if self.try_to_stop:
+                    break
             except:
                 self.clean()
                 break
+        # gRPC master server should close first
         self.kill_worker(self.pid, signal.SIGKILL)
 
     def init_signals(self):
@@ -108,5 +115,4 @@ class Mayue(object):
 
     def handle_exit(self, sig, frame):
         self.clean()
-        self.stop_workers()
-        sys.exit(sig)
+        self.try_to_stop = True
