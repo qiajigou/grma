@@ -27,7 +27,7 @@ class Mayue(object):
 
     def spawn_worker(self):
         sleep(0.1)
-        worker = Worker(self.app.server)
+        worker = Worker(self.app.server, self.app.args)
 
         pid = os.fork()
 
@@ -63,16 +63,34 @@ class Mayue(object):
             self.pidfile.unlink()
 
     def run(self):
+
+        # set pid
         self.pid = os.getpid()
-        self.init_signals()
+        # self.init_signals()
         if self.app.args.pid:
             self.pidfile = Pidfile(self.app.args.pid)
             self.pidfile.create(self.pid)
+
         print __logo__
         print '[OK] Running grma {version}'.format(version=__version__)
 
+        print '-' * 10 + ' CONFIG ' + '-' * 10
+
+        cf = dict()
+        for arg in vars(self.app.args):
+            cf[arg] = getattr(self.app.args, arg)
+
+        for k, v in cf.items():
+            msg = '{key}\t{value}'.format(key=k, value=v)
+            print msg
+
+        print '-' * 28
+
         for i in range(self.app.args.num):
             self.spawn_worker()
+
+        if self.app.args.daemon:
+            utils.daemonize()
 
         while True:
             try:
