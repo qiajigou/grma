@@ -28,7 +28,7 @@ class Mayue(object):
 
     def spawn_worker(self):
         sleep(0.1)
-        worker = Worker(self.app.server, self.app.args)
+        worker = Worker(self.pid, self.app.server, self.app.args)
 
         pid = os.fork()
 
@@ -80,16 +80,17 @@ class Mayue(object):
 
         print '-' * 28
 
-        print '[OK] Master running'
-        for i in range(self.app.args.num):
-            self.spawn_worker()
-
-        utils.setproctitle('grma master')
-
         if self.app.args.daemon:
             utils.daemonize()
 
         self.pid = os.getpid()
+
+        print '[OK] Master running pid: {pid}'.format(pid=self.pid)
+        utils.setproctitle('grma master pid={pid}'.format(pid=self.pid))
+
+        for i in range(self.app.args.num):
+            self.spawn_worker()
+
         if self.app.args.pid:
             self.pidfile = Pidfile(self.app.args.pid)
             self.pidfile.create(self.pid)
@@ -111,7 +112,7 @@ class Mayue(object):
         signal.signal(signal.SIGINT, self.handle_exit)
         signal.signal(signal.SIGQUIT, self.handle_exit)
         signal.signal(signal.SIGTERM, self.handle_exit)
-        signal.signal(signal.SIGCHLD, self.handle_exit)
+        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
     def handle_exit(self, sig, frame):
         self.clean()
