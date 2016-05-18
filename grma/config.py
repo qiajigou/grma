@@ -14,4 +14,6 @@ class Config(object):
                             help='a string of gRPC server module')
         parser.add_argument('--pid', type=str,
                             help='pid file of grma')
+        parser.add_argument('--daemon', type=int, default=0,
+                            help='run as daemon')
         return parser
