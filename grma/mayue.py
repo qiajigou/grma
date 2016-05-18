@@ -7,6 +7,7 @@ from time import sleep
 
 from grma import __version__, __logo__
 from worker import Worker
+from pidfile import Pidfile
 
 
 class Mayue(object):
@@ -16,6 +17,7 @@ class Mayue(object):
     def __init__(self, app):
         self.app = app
         self.pid = None
+        self.pidfile = None
 
         args = sys.argv[:]
         args.insert(0, sys.executable)
@@ -48,7 +50,6 @@ class Mayue(object):
             worker.stop()
             del self.workers[pid]
             self.kill_worker(pid, signal.SIGKILL)
-        self.kill_worker(self.pid, signal.SIGKILL)
 
     def kill_worker(self, pid, sig):
         try:
@@ -56,8 +57,16 @@ class Mayue(object):
         except OSError:
             pass
 
+    def clean(self):
+        self.stop_workers()
+        if self.pidfile is not None:
+            self.pidfile.unlink()
+
     def run(self):
         self.pid = os.getpid()
+        if self.app.args.pid:
+            self.pidfile = Pidfile(self.app.args.pid)
+            self.pidfile.create(self.pid)
         print __logo__
         print '[OK] Running grma {version}'.format(version=__version__)
 
@@ -68,5 +77,6 @@ class Mayue(object):
             try:
                 sleep(1)
             except:
-                self.stop_workers()
+                self.clean()
                 break
+        self.kill_worker(self.pid, signal.SIGKILL)

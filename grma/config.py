@@ -11,6 +11,7 @@ class Config(object):
                             help='a string of gRPC server module '
                             '[app:server]')
         parser.add_argument('--num', type=int, default=1,
-                            help='a string of gRPC server module ')
-
+                            help='a string of gRPC server module')
+        parser.add_argument('--pid', type=str,
+                            help='pid file of grma')
         return parser
