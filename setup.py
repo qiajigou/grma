@@ -17,5 +17,8 @@ setup(
     entry_points="""
     [console_scripts]
     grma=grma.app:run
-    """
+    """,
+    install_requires=[
+        'setproctitle==1.1.10'
+    ]
 )
