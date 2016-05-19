@@ -22,7 +22,7 @@ class JediServer(ServerBase):
     def bind(self, host, port, private_key_path='', certificate_chain_path=''):
         pass
 
-    def stop(self, graceful_timeout=3):
+    def stop(self, grace=3):
         pass
 
 app = JediServer()
