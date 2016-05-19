@@ -6,6 +6,20 @@
 
 A simple gunicorn like gRPC management server.
 
+# Example
+
+See examples folder.
+
+    grma --cls=server:app --num=8 --port=60061
+    
+Then use python
+
+```python
+from client import get_client
+c = get_client()
+c.hello('hello world')
+```
+
 # How to used
 
 inherit `ServerBase` to create your own `JediServer` Class:
