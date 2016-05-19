@@ -20,7 +20,8 @@ class Application(object):
         return '<Application>'
 
     def run(self):
-        Mayue(self).run()
+        if self.server:
+            Mayue(self).run()
 
     def init_path(self):
         path = utils.getcwd()
@@ -41,11 +42,30 @@ class Application(object):
             i = importlib.import_module(module)
             c = i.__dict__.get(var)
             if c:
-                self.server = c
+                try:
+                    if getattr(c, 'start') and getattr(c, 'stop'):
+                        self.server = c
+                except AttributeError:
+                    msg = '''--cls={cls} have no [start] or [stop] method:
+
+exp:
+
+class App(object):
+    def __init__(self):
+        pass
+
+    def start(self):
+        # start the gRPC server
+
+    def stop(self):
+        # stop the gRPC server
+                    '''
+                    print msg
+                    return False
             else:
-                raise
+                return False
         except:
-            raise
+            return False
 
 
 def run():
