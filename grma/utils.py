@@ -52,16 +52,3 @@ def daemonize():
 
     os.dup2(fd_null, 1)
     os.dup2(fd_null, 2)
-
-
-def is_port_open(host, port):
-    # since grpc won't quit if port is in used,
-    # we have to check if port is open manually
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.bind((host, port))
-        return True
-    except OSError:
-        return False
-    finally:
-        s.close()

@@ -24,7 +24,8 @@ class Server(ServerBase):
         self.started = False
 
     def bind(self, host, port, private_key_path='', certificate_chain_path=''):
-        self.server.add_insecure_port('%s:%s' % (host, port))
+        r = self.server.add_insecure_port('%s:%s' % (host, port))
+        return r
 
     def start(self):
         """start server"""

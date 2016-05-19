@@ -16,7 +16,6 @@ class ServiceImpl(server_pb2.BetaSimpleServiceServicer):
 
 class Server(ServerBase):
     def __init__(self):
-        """Init a r2d2 server instance"""
         server = server_pb2.beta_create_SimpleService_server(
             ServiceImpl()
         )
@@ -24,7 +23,9 @@ class Server(ServerBase):
         self.started = False
 
     def bind(self, host, port, private_key_path='', certificate_chain_path=''):
-        self.server.add_insecure_port('%s:%s' % (host, port))
+        # return 0 if cannot binded
+        r = self.server.add_insecure_port('%s:%s' % (host, port))
+        return r
 
     def start(self):
         """start server"""
