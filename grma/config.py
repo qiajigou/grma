@@ -24,4 +24,6 @@ class Config(object):
                             help='pid file for grma')
         parser.add_argument('--daemon', type=int, default=0,
                             help='run as daemon')
+        parser.add_argument('--grace', type=int, default=3,
+                            help='timeout for graceful shutdown')
         return parser

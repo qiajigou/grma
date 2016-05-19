@@ -10,5 +10,5 @@ class ServerBase(object):
     def bind(self, host, port, private_key_path='', certificate_chain_path=''):
         raise NotImplementedError()
 
-    def stop(self, graceful_timeout=0):
+    def stop(self, grace=0):
         raise NotImplementedError()

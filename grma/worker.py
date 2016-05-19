@@ -17,7 +17,7 @@ class Worker(object):
         self.server.start()
 
     def stop(self):
-        self.server.stop()
+        self.server.stop(self.args.grace)
 
     def init_signals(self):
         signal.signal(signal.SIGQUIT, self.handle_quit)
