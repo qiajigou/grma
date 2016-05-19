@@ -67,6 +67,12 @@ class Mayue(object):
             self.pidfile.unlink()
 
     def run(self):
+        host = self.app.args.host
+        port = self.app.args.port
+        if not utils.is_port_open(host, port):
+            err = 'Address [{host}]:{port} already in use'
+            raise RuntimeError(err.format(host=host, port=port))
+
         print __logo__
 
         print '[OK] Running grma {version}'.format(version=__version__)
@@ -89,7 +95,7 @@ class Mayue(object):
         self.pid = os.getpid()
 
         self.app.server.bind(
-            self.app.args.host, self.app.args.port,
+            host, port,
             self.app.args.private, self.app.args.certificate
             )
 
