@@ -1,4 +1,8 @@
 import argparse
+import logging
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 class Config(object):
