@@ -3,7 +3,8 @@ import argparse
 
 class Config(object):
     def parser(self):
-        parser = argparse.ArgumentParser(description='Run Server on PORT')
+        parser = argparse.ArgumentParser(description='A simple gunicorn like '
+                                         'gRPC server management tool')
         parser.add_argument('--host', type=str,
                             default='0.0.0.0',
                             help='an string for gRPC Server host')
@@ -18,9 +19,9 @@ class Config(object):
                             help='a string of gRPC server module '
                             '[app:server]')
         parser.add_argument('--num', type=int, default=1,
-                            help='a string of gRPC server module')
+                            help='a int of worker number')
         parser.add_argument('--pid', type=str,
-                            help='pid file of grma')
+                            help='pid file for grma')
         parser.add_argument('--daemon', type=int, default=0,
                             help='run as daemon')
         return parser
