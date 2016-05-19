@@ -44,7 +44,7 @@ class Mayue(object):
         except Exception as e:
             print e
         finally:
-            worker.stop(self.app.args.grace)
+            worker.stop()
 
     def stop_workers(self):
         for pid, worker in self.workers.items():
