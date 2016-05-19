@@ -8,11 +8,33 @@ A simple gunicorn like gRPC management server.
 
 # How to used
 
-This should be simple:
+inherit `ServerBase` to create your own `JediServer` Class:
+
+```python
+from grma.server.base import ServerBase
+
+class JediServer(ServerBase):
+    """Your gRPC server class"""
+
+    def start(self):
+        pass
+
+    def bind(self, host, port, private_key_path='', certificate_chain_path=''):
+        pass
+
+    def stop(self, graceful_timeout=3):
+        pass
+
+app = JediServer()
+```
+
+Launching should be simple:
 
     run grma --port=50051 --cls=app:app --num=8 --daemon=1
 
+
 Get more from help
+
 
 ```
 usage: grma [-h] [--host HOST] [--port PORT] [--private PRIVATE]
