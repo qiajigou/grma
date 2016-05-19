@@ -69,9 +69,6 @@ class Mayue(object):
     def run(self):
         host = self.app.args.host
         port = self.app.args.port
-        if not utils.is_port_open(host, port):
-            err = 'Address [{host}]:{port} already in use'
-            raise RuntimeError(err.format(host=host, port=port))
 
         print __logo__
 
@@ -94,10 +91,16 @@ class Mayue(object):
 
         self.pid = os.getpid()
 
-        self.app.server.bind(
+        binded = self.app.server.bind(
             host, port,
             self.app.args.private, self.app.args.certificate
             )
+
+        if not binded:
+            logging.info('[FAILED] Master cannot bind {host}:{port}, '
+                         'or maybe bind function return None?'.format(
+                             host=host, port=port))
+            sys.exit(1)
 
         logging.info('[OK] Master running pid: {pid}'.format(pid=self.pid))
         utils.setproctitle('grma master pid={pid}'.format(pid=self.pid))
@@ -106,8 +109,12 @@ class Mayue(object):
             self.spawn_worker()
 
         if self.app.args.pid:
-            self.pidfile = Pidfile(self.app.args.pid)
-            self.pidfile.create(self.pid)
+            try:
+                self.pidfile = Pidfile(self.app.args.pid)
+                self.pidfile.create(self.pid)
+            except:
+                self.clean()
+                sys.exit(1)
 
         self.init_signals()
 
