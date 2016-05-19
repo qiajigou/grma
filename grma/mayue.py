@@ -2,6 +2,7 @@ import os
 import sys
 import utils
 import signal
+import logging
 
 from time import sleep
 
@@ -13,6 +14,8 @@ from pidfile import Pidfile
 class Mayue(object):
     ctx = dict()
     workers = dict()
+
+    logger = logging.getLogger(__name__)
 
     def __init__(self, app):
         self.app = app
@@ -42,7 +45,7 @@ class Mayue(object):
             worker.run()
             sys.exit(0)
         except Exception as e:
-            print e
+            self.logger.exception('Exception: %s', e)
         finally:
             worker.stop()
 
@@ -90,7 +93,7 @@ class Mayue(object):
             self.app.args.private, self.app.args.certificate
             )
 
-        print '[OK] Master running pid: {pid}'.format(pid=self.pid)
+        logging.info('[OK] Master running pid: {pid}'.format(pid=self.pid))
         utils.setproctitle('grma master pid={pid}'.format(pid=self.pid))
 
         for i in range(self.app.args.num):

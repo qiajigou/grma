@@ -1,9 +1,12 @@
 import os
 import utils
 import signal
+import logging
 
 
 class Worker(object):
+    logger = logging.getLogger(__name__)
+
     def __init__(self, pid, server, args):
         self.server = server
         self.args = args
@@ -12,7 +15,7 @@ class Worker(object):
 
     def run(self):
         pid = os.getpid()
-        print '[OK] Worker running with pid: {pid}'.format(pid=pid)
+        self.logger.info('[OK] Worker running with pid: {pid}'.format(pid=pid))
         utils.setproctitle('grma worker pid={pid}'.format(pid=pid))
         self.server.start()
 
