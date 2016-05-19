@@ -64,7 +64,8 @@ class App(object):
                     return False
             else:
                 return False
-        except:
+        except Exception, e:
+            print e
             return False
 
 

@@ -85,6 +85,11 @@ class Mayue(object):
 
         self.pid = os.getpid()
 
+        self.app.server.bind(
+            self.app.args.host, self.app.args.port,
+            self.app.args.private, self.app.args.certificate
+            )
+
         print '[OK] Master running pid: {pid}'.format(pid=self.pid)
         utils.setproctitle('grma master pid={pid}'.format(pid=self.pid))
 
