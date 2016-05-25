@@ -11,6 +11,8 @@ class Worker(object):
         self.server = server
         self.args = args
         self.master_pid = pid
+
+    def init_worker(self):
         self.init_signals()
 
     def run(self):
@@ -29,16 +31,9 @@ class Worker(object):
 
     def _stop(self):
         self.stop()
-        self.kill_worker(self.master_pid, signal.SIGTERM)
 
     def handle_quit(self, sig, frame):
         self._stop()
 
     def handle_exit(self, sig, frame):
         self._stop()
-
-    def kill_worker(self, pid, sig):
-        try:
-            os.kill(pid, sig)
-        except OSError:
-            pass

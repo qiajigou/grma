@@ -1,5 +1,6 @@
 import os
-import socket
+import signal
+import fcntl
 
 
 try:
@@ -17,6 +18,12 @@ try:
 except ImportError:
     def setproctitle(title):
         return
+
+
+SIG_NAMES = dict(
+    (getattr(signal, name), name[3:].lower()) for name in dir(signal)
+    if name[:3] == "SIG" and name[3] != "_"
+)
 
 
 def getcwd():
@@ -52,3 +59,14 @@ def daemonize():
 
     os.dup2(fd_null, 1)
     os.dup2(fd_null, 2)
+
+
+def set_non_blocking(fd):
+    flags = fcntl.fcntl(fd, fcntl.F_GETFL) | os.O_NONBLOCK
+    fcntl.fcntl(fd, fcntl.F_SETFL, flags)
+
+
+def close_on_exec(fd):
+    flags = fcntl.fcntl(fd, fcntl.F_GETFD)
+    flags |= fcntl.FD_CLOEXEC
+    fcntl.fcntl(fd, fcntl.F_SETFD, flags)

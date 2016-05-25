@@ -2,6 +2,8 @@ import os
 import sys
 import utils
 import signal
+import errno
+import select
 import logging
 
 from time import sleep
@@ -10,12 +12,17 @@ from grma import __version__, __logo__
 from worker import Worker
 from pidfile import Pidfile
 
+_sigs = [getattr(signal, "SIG%s" % x)
+         for x in "HUP QUIT INT TERM TTIN TTOU USR1 USR2 WINCH".split()]
+
 
 class Mayue(object):
     ctx = dict()
     workers = dict()
 
     logger = logging.getLogger(__name__)
+    pipe = list()
+    signal_list = list()
 
     def __init__(self, app):
         self.app = app
@@ -42,12 +49,18 @@ class Mayue(object):
 
         # child process
         try:
+            worker.init_worker()
             worker.run()
             sys.exit(0)
         except Exception as e:
             self.logger.exception('Exception: %s', e)
         finally:
             worker.stop()
+
+    def spawn_workers(self):
+        for i in range(self.app.args.num):
+            self.spawn_worker()
+        self.init_signals()
 
     def stop_workers(self):
         for pid, worker in self.workers.items():
@@ -105,8 +118,7 @@ class Mayue(object):
         logging.info('[OK] Master running pid: {pid}'.format(pid=self.pid))
         utils.setproctitle('grma master pid={pid}'.format(pid=self.pid))
 
-        for i in range(self.app.args.num):
-            self.spawn_worker()
+        self.init_signals()
 
         if self.app.args.pid:
             try:
@@ -116,25 +128,125 @@ class Mayue(object):
                 self.clean()
                 sys.exit(1)
 
-        self.init_signals()
-
+        self.manage_workers()
         while True:
             try:
-                sleep(1)
                 if self.try_to_stop:
                     break
-            except:
+
+                sig = self.signal_list.pop(0) if self.signal_list else None
+
+                if sig is None:
+                    self.sleep()
+                    self.manage_workers()
+                    continue
+
+                self.process_signal(sig)
+                self.wakeup()
+            except KeyboardInterrupt:
+                self.clean()
+                break
+            except Exception as e:
+                self.logger.info(e)
                 self.clean()
                 break
         # gRPC master server should close first
         self.kill_worker(self.pid, signal.SIGKILL)
 
-    def init_signals(self):
-        signal.signal(signal.SIGINT, self.handle_exit)
-        signal.signal(signal.SIGQUIT, self.handle_exit)
-        signal.signal(signal.SIGTERM, self.handle_exit)
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+    def process_signal(self, sig):
+        if not sig:
+            return
+        signame = utils.SIG_NAMES.get(sig)
+        self.logger.info('Handing signal {signame}'.format(signame=signame))
+        handler = getattr(self, "_handle_%s" % signame, None)
+        if not handler:
+            self.logger.error('no such a hander for sig {signame}'.format(
+                signame=signame
+            ))
+        else:
+            handler()
 
-    def handle_exit(self, sig, frame):
+    def init_signals(self):
+
+        if self.pipe:
+            [os.close(p) for p in self.pipe]
+
+        self.pipe = pair = os.pipe()
+
+        for p in pair:
+            utils.set_non_blocking(p)
+            utils.close_on_exec(p)
+
+        [signal.signal(s, self.handle_signal) for s in _sigs]
+        signal.signal(signal.SIGCHLD, self._handle_chld)
+
+    def handle_signal(self, sig, frame):
+        if len(self.signal_list) < 10:
+            self.signal_list.append(sig)
+            self.wakeup()
+
+    def wakeup(self):
+        try:
+            os.write(self.pipe[1], '.')
+        except IOError as e:
+            if e.errno not in [errno.EAGAIN, errno.EINTR]:
+                raise
+
+    def sleep(self):
+        try:
+            ready = select.select([self.pipe[0]], [], [], 1.0)
+            if not ready[0]:
+                return
+            while os.read(self.pipe[0], 1):
+                pass
+        except select.error as e:
+            if e.args[0] not in [errno.EAGAIN, errno.EINTR]:
+                raise
+        except OSError as e:
+            if e.errno not in [errno.EAGAIN, errno.EINTR]:
+                raise
+        except KeyboardInterrupt:
+            sys.exit()
+
+    def stop(self):
         self.clean()
         self.try_to_stop = True
+
+    def _handle_int(self):
+        self.stop()
+
+    def _handle_quite(self):
+        self.stop()
+
+    def _handle_term(self):
+        self.stop()
+
+    def _handle_chld(self, sig, frame):
+        self.process_workers()
+        self.wakeup()
+
+    def process_workers(self):
+        try:
+            while True:
+                wpid, status = os.waitpid(-1, os.WNOHANG)
+                if not wpid:
+                    break
+                else:
+                    worker = self.workers.pop(wpid, None)
+                    if not worker:
+                        continue
+                    worker.stop()
+        except OSError as e:
+            if e.errno != errno.ECHILD:
+                raise
+
+    def manage_workers(self):
+        diff = self.app.args.num - len(self.workers)
+        if diff > 0:
+            for i in range(diff):
+                self.spawn_worker()
+
+        workers = self.workers.items()
+        while len(workers) > self.app.args.num:
+            (pid, _) = workers.pop(0)
+            self.kill_worker(pid, signal.SIGKILL)
