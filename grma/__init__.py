@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -
 
-version_info = (0, 0, 4)
+version_info = (0, 0, 5)
 __version__ = '.'.join([str(i) for i in version_info])
 __logo__ = '''
 ************************************
