@@ -13,3 +13,4 @@ tests/.cache/*
 venv
 .DS_Store
 .tox/*
+*.pid

@@ -6,6 +6,8 @@
 
 A simple gunicorn like gRPC management server.
 
+[![Build Status](https://travis-ci.org/qiajigou/grma.svg?branch=master)](https://travis-ci.org/qiajigou/grma)
+
 # Example
 
 See examples folder.
