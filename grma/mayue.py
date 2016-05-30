@@ -36,6 +36,14 @@ class Mayue(object):
 
         self.ctx = dict(args=args, cwd=cwd, exectable=sys.executable)
 
+    @property
+    def num_workers(self):
+        return self.app.args.num
+
+    @num_workers.setter
+    def num_workers(self, value):
+        self.app.args.num = value
+
     def spawn_worker(self):
         sleep(0.1)
         worker = Worker(self.pid, self.app.server, self.app.args)
@@ -58,7 +66,7 @@ class Mayue(object):
             worker.stop()
 
     def spawn_workers(self):
-        for i in range(self.app.args.num):
+        for i in range(self.num_workers):
             self.spawn_worker()
         self.init_signals()
 
@@ -147,7 +155,7 @@ class Mayue(object):
                 self.clean()
                 break
             except Exception as e:
-                self.logger.info(e)
+                self.logger.exception(e)
                 self.clean()
                 break
         # gRPC master server should close first
@@ -157,7 +165,8 @@ class Mayue(object):
         if not sig:
             return
         signame = utils.SIG_NAMES.get(sig)
-        self.logger.info('Handing signal {signame}'.format(signame=signame))
+        self.logger.info('Handing signal {signame}'.format(
+            signame=signame.upper()))
         handler = getattr(self, "_handle_%s" % signame, None)
         if not handler:
             self.logger.error('no such a hander for sig {signame}'.format(
@@ -225,6 +234,28 @@ class Mayue(object):
         self.process_workers()
         self.wakeup()
 
+    def _handle_ttin(self):
+        """SIGTTIN handling.
+        Increases the number of workers by one.
+        """
+        self.num_workers = self.num_workers + 1
+        self.logger.info('Create a new worker. '
+                         'Now you have {num} workers '
+                         'work for you'.format(num=self.num_workers))
+        self.manage_workers()
+
+    def _handle_ttou(self):
+        """SIGTTOU handling.
+        Decreases the number of workers by one.
+        """
+        if self.num_workers <= 1:
+            self.logger.error('You cannot kill the only worker you have.')
+            return
+        self.num_workers = self.num_workers - 1
+        self.logger.info('Kill a worker. Now you have {num} workers '
+                         'work for you'.format(num=self.num_workers))
+        self.manage_workers()
+
     def process_workers(self):
         try:
             while True:
@@ -241,12 +272,12 @@ class Mayue(object):
                 raise
 
     def manage_workers(self):
-        diff = self.app.args.num - len(self.workers)
+        diff = self.num_workers - len(self.workers)
         if diff > 0:
             for i in range(diff):
                 self.spawn_worker()
 
         workers = self.workers.items()
-        while len(workers) > self.app.args.num:
+        while len(workers) > self.num_workers:
             (pid, _) = workers.pop(0)
             self.kill_worker(pid, signal.SIGKILL)
