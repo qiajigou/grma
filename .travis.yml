@@ -14,4 +14,4 @@ before_install:
     - echo "deb http://http.debian.net/debian jessie-backports main" | sudo tee -a /etc/apt/sources.list
     - sudo apt-get update -y
     - sudo apt-get install libgrpc-dev -y --force-yes
-    - pip install grpcio protobuf
+    - pip install grpcio==0.14.0 protobuf==3.0.0b3,
