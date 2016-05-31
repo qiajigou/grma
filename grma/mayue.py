@@ -3,7 +3,6 @@ import sys
 import utils
 import signal
 import errno
-import select
 import logging
 
 from time import sleep
@@ -21,7 +20,6 @@ class Mayue(object):
     workers = dict()
 
     logger = logging.getLogger(__name__)
-    pipe = list()
     signal_list = list()
 
     def __init__(self, app):
@@ -145,12 +143,10 @@ class Mayue(object):
                 sig = self.signal_list.pop(0) if self.signal_list else None
 
                 if sig is None:
-                    self.sleep()
                     self.manage_workers()
                     continue
 
                 self.process_signal(sig)
-                self.wakeup()
             except KeyboardInterrupt:
                 self.clean()
                 break
@@ -176,46 +172,12 @@ class Mayue(object):
             handler()
 
     def init_signals(self):
-
-        if self.pipe:
-            [os.close(p) for p in self.pipe]
-
-        self.pipe = pair = os.pipe()
-
-        for p in pair:
-            utils.set_non_blocking(p)
-            utils.close_on_exec(p)
-
         [signal.signal(s, self.handle_signal) for s in _sigs]
         signal.signal(signal.SIGCHLD, self._handle_chld)
 
     def handle_signal(self, sig, frame):
         if len(self.signal_list) < 10:
             self.signal_list.append(sig)
-            self.wakeup()
-
-    def wakeup(self):
-        try:
-            os.write(self.pipe[1], '.')
-        except IOError as e:
-            if e.errno not in [errno.EAGAIN, errno.EINTR]:
-                raise
-
-    def sleep(self):
-        try:
-            ready = select.select([self.pipe[0]], [], [], 1.0)
-            if not ready[0]:
-                return
-            while os.read(self.pipe[0], 1):
-                pass
-        except select.error as e:
-            if e.args[0] not in [errno.EAGAIN, errno.EINTR]:
-                raise
-        except OSError as e:
-            if e.errno not in [errno.EAGAIN, errno.EINTR]:
-                raise
-        except KeyboardInterrupt:
-            sys.exit()
 
     def stop(self):
         self.clean()
@@ -232,7 +194,6 @@ class Mayue(object):
 
     def _handle_chld(self, sig, frame):
         self.process_workers()
-        self.wakeup()
 
     def _handle_ttin(self):
         """SIGTTIN handling.
