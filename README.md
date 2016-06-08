@@ -22,7 +22,7 @@ c = get_client()
 c.hello('hello world')
 ```
 
-# How to used
+# How to use
 
 inherit `ServerBase` to create your own `JediServer` Class:
 
