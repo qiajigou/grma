@@ -4,6 +4,8 @@
 
 # Overview
 
+[![Join the chat at https://gitter.im/qiajigou/grma](https://badges.gitter.im/qiajigou/grma.svg)](https://gitter.im/qiajigou/grma?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 A simple gunicorn like gRPC management server.
 
 [![Build Status](https://travis-ci.org/qiajigou/grma.svg?branch=master)](https://travis-ci.org/qiajigou/grma)
